@@ -1,0 +1,47 @@
+name: Build Vocal Studio APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK tools
+        run: |
+          sdkmanager "platform-tools" \
+            "platforms;android-36" \
+            "build-tools;35.0.0" \
+            "ndk;27.2.12479018" \
+            "cmake;3.22.1"
+
+      - name: Extract Vocal Studio project
+        run: |
+          mkdir -p extracted
+          unzip -q VocalStudio_Android_cloud_build_20260811.zip -d extracted
+
+      - name: Build APK
+        working-directory: extracted/VocalStudio_Android
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: VocalStudio-debug-apk
+          path: extracted/VocalStudio_Android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
